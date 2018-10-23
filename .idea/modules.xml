@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/ImageCrab.iml" filepath="$PROJECT_DIR$/ImageCrab.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/blurbehind/blurbehind.iml" filepath="$PROJECT_DIR$/blurbehind/blurbehind.iml" />
+      <module fileurl="file://$PROJECT_DIR$/myprocessbar/myprocessbar.iml" filepath="$PROJECT_DIR$/myprocessbar/myprocessbar.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mywebview/mywebview.iml" filepath="$PROJECT_DIR$/mywebview/mywebview.iml" />
+      <module fileurl="file://$PROJECT_DIR$/popmenu/popmenu.iml" filepath="$PROJECT_DIR$/popmenu/popmenu.iml" />
+      <module fileurl="file://$PROJECT_DIR$/swipemenulistview/swipemenulistview.iml" filepath="$PROJECT_DIR$/swipemenulistview/swipemenulistview.iml" />
+    </modules>
+  </component>
+</project>

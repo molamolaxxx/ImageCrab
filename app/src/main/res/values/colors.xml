@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#dc5288ec</color>
+    <color name="colorPrimarytran">#766996ea</color>
+    <color name="colorPrimaryDark">#b64a5ee2</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="translucent">#ede4eaea</color>
+    <color name="white">#c4ffffff</color>
+    <color name="pureWhite">#ffffff</color>
+    <color name="tran_white">#9affffff</color>
+    <color name="gray">#d8575956</color>
+    <color name="red">#b5ef8769</color>
+    <color name="blue">#b296c5ff</color>
+    <color name="pureBlue">#0d468c</color>
+    <color name="black">#ce0b0b0b</color>
+    <color name="tabBackColor">#82ffffff</color>
+    <color name="pureBlack">#0b0b0b</color>
+</resources>

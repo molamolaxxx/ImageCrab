@@ -40,8 +40,6 @@ public class DownBaiduPicture {
 	private OnDownLoadFinishListener onDownLoadFinishListener;
 	private Context mContext;
 	private ImageDownloadUtils imageDownloadUtils;
-
-	private Boolean isContinue=true;
 	public DownBaiduPicture(String str,
 							OnDownLoadFinishListener onDownLoadFinishListener
 	){
@@ -49,7 +47,7 @@ public class DownBaiduPicture {
 		this.onDownLoadFinishListener=onDownLoadFinishListener;
 		imageDownloadUtils=new ImageDownloadUtils();
 	}
-
+	//设置下载图片属性
 	public void setPicture(String keyword, int page, int flg,
 						   int wid, int hei, int imageEachPage, Context context){
 		key = keyword;
@@ -60,155 +58,78 @@ public class DownBaiduPicture {
 		mContext=context;
 		this.imageEachPage=imageEachPage;
 	}
-	/**
-	 * @param word
-	 * @param page
-	 * @param flg
-	 */
-	/**
-	 * @param srcUrl
-	 * @param outputFile
-	 * @throws IOException
-	 */
-	//下载每一张图片并保存
-	public void downloadEach(String srcUrl, String outputFile) throws IOException{
-		System.out.println(srcUrl+"\t"+"start");
-		URL url = new URL(srcUrl);
-		URLConnection uc = url.openConnection();
-		if(flag == 0){
-			HttpsURLConnection hus = (HttpsURLConnection)uc;
-			hus.setDoOutput(true);
-			hus.setRequestProperty("User-Agent", UserAgent);
-			hus.setRequestProperty("Accept-Encoding", "gzip, deflate, sdch, br");
-			hus.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.8");
-			hus.setRequestProperty("Connection", "keep-alive");
-			BufferedInputStream bis = null;
-			BufferedOutputStream bos = null;
-			try {
-				bis = new BufferedInputStream(hus.getInputStream());
-				bos = new BufferedOutputStream(new FileOutputStream(outputFile));
-				byte[] temp = new byte[BUFFERSIZE];
-				int count = 0;
-				while((count = bis.read(temp)) != -1){
-					bos.write(temp, 0, count);
-					bos.flush();
-				}
-				System.out.println(srcUrl+"\t"+"end");
-			}catch (IOException e) {
-				System.out.println(srcUrl+"\t"+"error");
-				errorFileDel(outputFile);
-			}finally {
-				bos.close();
-				bis.close();
-			}
-			return;
-		}
-		HttpURLConnection huc = (HttpURLConnection)uc;
-		huc.setDoOutput(true);
-		huc.setRequestProperty("User-Agent", UserAgent);
-		huc.setRequestProperty("Accept-Encoding", "gzip, deflate, sdch, br");
-		huc.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.8");
-		huc.setRequestProperty("Connection", "keep-alive");
-
-		BufferedInputStream bis = null;
-		BufferedOutputStream bos = null;
-		try {
-			bis = new BufferedInputStream(huc.getInputStream());
-			bos = new BufferedOutputStream(new FileOutputStream(outputFile));
-			byte[] temp = new byte[BUFFERSIZE];
-			int count = 0;
-			while((count = bis.read(temp)) != -1){
-				bos.write(temp, 0, count);
-				bos.flush();
-			}
-			System.out.println(srcUrl+"\t"+"end");
-		}catch (IOException e) {
-			e.printStackTrace();
-			System.out.println(srcUrl+"\t"+"error");
-			//删掉损坏的文档
-			errorFileDel(outputFile);
-		}finally {
-			bos.close();
-			bis.close();
-		}
-	}
 	public static void addOnePic(){
 		//获得一张失败图片后，所要爬载的图片加一
 		imageEachPage=imageEachPage+1;
 	}
 	//深度爬取图片
+	public void downLoad(DownloadTask dk){
+		try {
+			//爬载每一页的数据
+			for (int i = 0; i < pn; i++) {
+				//获取url链接
+				String urlRes = baseUrl + key + pnUrl + (i * 30) + connect + widthUrl;
+				urlRes += width == 0 ? "" : width;
+				urlRes += height == 0 ? heightUrl : heightUrl + height;
 
-	public void downLoad() throws IOException{
-		//爬载每一页的数据
-		for(int i=0; i<pn; i++){
-			//获取url链接
-			String urlRes = baseUrl+key+pnUrl+(i*30)+connect+widthUrl;
-			urlRes += width == 0? "": width;
-			urlRes += height == 0? heightUrl : heightUrl + height;
-			
-			System.out.println(urlRes);
-			Document document = null;
-			//获得htmldocument数据——jsoup
-			document = Jsoup.connect(new String(urlRes.getBytes("utf-8")))
-							.userAgent(UserAgent)
-							.get();
-			//转化为String类型的html标签,匹配正则式
-			String str = document.toString();
-			String reg = flag == 0? "thumbURL\":\"https://.+?\"" : "objURL\":\"http://.+?\"" ;
-			Pattern pattern = Pattern.compile(reg);
-			Matcher matcher = pattern.matcher(str);
-			//创建存储文件夹
-			//String pathname = file+"/"+key+"/"+i;
-			//new File(pathname).mkdirs();
-			int count = 0;
-			while(matcher.find()){
-				count++;
-				System.out.println("count是"+count+"imageEachPage是"+imageEachPage);
-				if(count==imageEachPage+1) {
-					break;
-				}
-				if(!isContinue){
-					System.out.println("已取消下载");
-					break;
-				}
-				int start = flag == 0? 11 : 9;
-				//最终每张图片的url
-				String findUrl = matcher.group().substring(start, matcher.group().length()-1);
-				String opn;
-				int index;
-				if((index = findUrl.lastIndexOf("."))!=-1&&
-						(findUrl.substring(index).equals(".png")||
-						 findUrl.substring(index).equals(".PNG")||
-						 findUrl.substring(index).equals(".jif")||
-						 findUrl.substring(index).equals(".GIF"))){
-					opn = count + findUrl.substring(index);
-				}
-				else{
-					opn = count + ".jpg";
-				}
-				try {
-					System.out.println(findUrl);
-					imageDownloadUtils.downLoadPic(findUrl,file+"/"+key,onDownLoadFinishListener);
-					onDownLoadFinishListener.onFinishOnePage();
-					//downloadEach(findUrl, pathname+"/"+opn);
-				} catch (Exception e) {
-					e.printStackTrace();
-					System.out.println(findUrl+"\terror");
-					continue;
+				System.out.println(urlRes);
+				Document document = null;
+				//获得htmldocument数据——jsoup
+				System.out.println("1########");
+				document = Jsoup.connect(new String(urlRes.getBytes("utf-8")))
+						.userAgent(UserAgent)
+						.timeout(3000)
+						.get();
+				//转化为String类型的html标签,匹配正则式
+				String str = document.toString();
+				String reg = flag == 0 ? "thumbURL\":\"https://.+?\"" : "objURL\":\"http://.+?\"";
+				Pattern pattern = Pattern.compile(reg);
+				Matcher matcher = pattern.matcher(str);
+				//创建存储文件夹
+				//String pathname = file+"/"+key+"/"+i;
+				//new File(pathname).mkdirs();
+				int count = 0;
+				while (matcher.find()) {
+					count++;
+					System.out.println("count是" + count + "imageEachPage是" + imageEachPage);
+					if (count >= imageEachPage + 1) {
+						break;
+					}
+					if (dk.isCancelled()) {
+						System.out.println("已取消下载");
+						break;
+					}
+					System.out.println("2########");
+					int start = flag == 0 ? 11 : 9;
+					//最终每张图片的url
+					String findUrl = matcher.group().substring(start, matcher.group().length() - 1);
+					String opn;
+					int index;
+					if ((index = findUrl.lastIndexOf(".")) != -1 &&
+							(findUrl.substring(index).equals(".png") ||
+									findUrl.substring(index).equals(".PNG") ||
+									findUrl.substring(index).equals(".jif") ||
+									findUrl.substring(index).equals(".GIF"))) {
+						opn = count + findUrl.substring(index);
+					} else {
+						opn = count + ".jpg";
+					}
+					try {
+						System.out.println(findUrl);
+						System.out.println("3########");
+						imageDownloadUtils.downLoadPic(findUrl, file + "/" + key, onDownLoadFinishListener);
+						onDownLoadFinishListener.onFinishOnePage(count,imageEachPage+1);
+						//downloadEach(findUrl, pathname+"/"+opn);
+					} catch (Exception e) {
+						e.printStackTrace();
+						System.out.println(findUrl + "\terror");
+						continue;
+					}
 				}
 			}
 		}
-	}
-	/**
-	 * outputFile
-	 */
-	public void setIsContinue(Boolean b){
-		isContinue=b;
-	}
-	public static void errorFileDel(String outputFile){
-		File errorFile = new File(outputFile);
-		if(errorFile.exists()){
-			errorFile.delete();
+		catch (Exception e){
+			e.printStackTrace();
 		}
 	}
 }

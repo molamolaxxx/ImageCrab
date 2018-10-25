@@ -29,10 +29,13 @@ public class ImageDownloadUtils {
         try {
             url = new URL(imageurl);
             connection=(HttpURLConnection)url.openConnection();
-            connection.setConnectTimeout(2000); //超时设置
+            connection.setConnectTimeout(2000); //链接超时设置
+            connection.setReadTimeout(2000);//设置读取超时
             connection.setDoInput(true);
             connection.setUseCaches(false); //设置不使用缓存
+            System.out.println("4########");
             InputStream inputStream=connection.getInputStream();
+            System.out.println("5########");
             bitmap= BitmapFactory.decodeStream(inputStream);
             inputStream.close();
             System.gc();
@@ -48,6 +51,7 @@ public class ImageDownloadUtils {
     public  void saveImage(Bitmap bitmap, String path){
         File file=new File(path);
         FileOutputStream fileOutputStream=null;
+        System.out.println("6########");
         //文件夹不存在，则创建它
         if(!file.exists()){
             file.mkdir();

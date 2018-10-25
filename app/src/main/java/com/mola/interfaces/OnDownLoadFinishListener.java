@@ -5,9 +5,11 @@ package com.mola.interfaces;
  */
 
 public interface OnDownLoadFinishListener {
-    //每成功下载一张
-    void onFinishOnePage();
+    //每成功下载一张,number为页号
+    void onFinishOnePage(int number,int totalNum);
     //单张下载超时
     void downloadTimeout();
     void downloadFinish();
+    void updateProgress(int progress);
+    void downloadCanceled();
 }

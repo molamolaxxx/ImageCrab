@@ -36,6 +36,6 @@ dependencies {
     compile project(':popmenu')
     compile project(':myprocessbar')
     compile 'com.github.open-android:BridgeWebView:v1.0'
-    testCompile 'junit:junit:4.12'
+    compile 'junit:junit:4.12'
     compile 'com.android.support:design:26.0.0-alpha1'
 }

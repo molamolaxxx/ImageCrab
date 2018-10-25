@@ -12,7 +12,8 @@
         android:icon="@drawable/ic_action_bug"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/myTransparent">
+        android:theme="@style/myTransparent"
+        >
         <activity
             android:name=".EnterActivity"
             android:windowSoftInputMode="stateHidden|adjustResize">

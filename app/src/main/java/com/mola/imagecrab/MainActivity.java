@@ -14,14 +14,11 @@ import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
-import android.support.v4.view.ViewCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -33,15 +30,14 @@ import android.widget.Toast;
 import com.facebook.rebound.SimpleSpringListener;
 import com.facebook.rebound.Spring;
 import com.facebook.rebound.SpringConfig;
-import com.facebook.rebound.SpringListener;
 import com.facebook.rebound.SpringSystem;
 import com.mola.blurbehind.BlurBehind;
 import com.mola.blurbehind.OnBlurCompleteListener;
+import com.mola.control.DownloadTask;
 import com.mola.interfaces.OnDownLoadFinishListener;
 import com.mola.popmenu.OnPopMenuCloseListener;
 import com.mola.myprocessbar.NumberProgressBar;
 import com.mola.myprocessbar.OnProgressBarListener;
-import com.mola.objects.Session;
 import com.mola.popmenu.PopMenu;
 import com.mola.popmenu.PopMenuItem;
 import com.mola.popmenu.PopMenuItemListener;
@@ -87,7 +83,6 @@ public class MainActivity extends FragmentActivity
     private SwipeMenuListView sml;
     private static ArrayList<String> pathList;
     private Button CancelDownload;
-    private Session session;
     private String content="";
     private  String mCacheDir;
     private String mDownLoadDir;
@@ -99,6 +94,10 @@ public class MainActivity extends FragmentActivity
     private FileCompratorUtils fileCompratorUtils;
     public static ArrayList<Image> imageList;
     private NumberProgressBar numberProgressBar;
+    private DownloadTask mDownloadTask;
+    /**
+     * setting
+     */
     Handler handler=new Handler(){
         @Override
         public void handleMessage(Message msg) {
@@ -106,7 +105,10 @@ public class MainActivity extends FragmentActivity
             switch (msg.what){
                 //下载完毕
                 case 1: {
-                    Toast.makeText(MainActivity.this,"全部下载完毕！",Toast.LENGTH_SHORT).show();
+                    if (imageList.size()==0)
+                        Toast.makeText(MainActivity.this,"电波好像传达不到了。。。",Toast.LENGTH_SHORT).show();
+                    else
+                        Toast.makeText(MainActivity.this,"全部下载完毕！",Toast.LENGTH_SHORT).show();
                     progessLinearLayout.setVisibility(View.INVISIBLE);
 
                     numberProgressBar.setProgress(0);
@@ -115,7 +117,13 @@ public class MainActivity extends FragmentActivity
                 //刷新list
                 case 2:{
                     refreshListView();
-                    numberProgressBar.incrementProgressBy(3);
+                    numberProgressBar.setProgress(msg.arg1*100/msg.arg2);
+                    break;
+                }
+                case 3:{
+                    Toast.makeText(MainActivity.this,"已取消下载！",Toast.LENGTH_SHORT).show();
+                    progessLinearLayout.setVisibility(View.INVISIBLE);
+                    numberProgressBar.setProgress(0);
                     break;
                 }
                 default:
@@ -133,7 +141,6 @@ public class MainActivity extends FragmentActivity
         //创建图片缓存机制
         PermissionUtils.verifyStoragePermissions(this);
         createCacheAndDownLoadFolder();
-        initSession();
         //初始化图片：测试用
         initImages();
         initListView();
@@ -165,7 +172,6 @@ public class MainActivity extends FragmentActivity
                 break;
             }
             case "save_all":{
-
                 saveAllImage();
                 imageList.clear();
                 judgeEmpty();
@@ -177,8 +183,7 @@ public class MainActivity extends FragmentActivity
                 break;
             }
             case "cancel_download":{
-                session.cancelDownload();
-                Toast.makeText(this,"已取消下载", Toast.LENGTH_SHORT).show();
+                mDownloadTask.cancel(true);
             }
         }
     }
@@ -205,21 +210,37 @@ public class MainActivity extends FragmentActivity
     }
     //下载监听接口重写,每下载一张调用一次
     @Override
-    public void onFinishOnePage() {
+    public void onFinishOnePage(int number,int totalNum) {
         //刷新listview
         System.out.println("finish one page!");
         getImages();
         Message message=handler.obtainMessage();
         message.what=2;
+        //message参数
+        message.arg1=number;
+        message.arg2=totalNum;
         handler.sendMessage(message);
     }
+    //取消下载的回调接口
+    @Override
+    public void downloadCanceled() {
+        Message message=handler.obtainMessage();
+        message.what=3;
+        handler.sendMessage(message);
+    }
+
     @Override
     public void downloadFinish() {
         Message message=handler.obtainMessage();
         message.what=1;
         handler.sendMessage(message);
-        //判断是否为空
     }
+
+    @Override
+    public void updateProgress(int progress) {
+        numberProgressBar.setProgress(progress);
+    }
+
     //刷新listview
     public void refreshListView(){
         //判断list是否为空
@@ -371,11 +392,7 @@ public class MainActivity extends FragmentActivity
         imageList=new ArrayList<>();
         pathList=new ArrayList<>();
     }
-    public void initSession(){
-        session=new Session.Builder().sessName("new sess")
-                .sessType(Session.TYPEKEYWORD)
-                .create();
-    }
+
     public static Image getBigImage(int pos){
         return imageList.get(pos);
     }
@@ -392,10 +409,6 @@ public class MainActivity extends FragmentActivity
             return;
         imageList.add(im);
         pathList.add(im.getPath());
-//        for(Image im:imageList){
-//            System.out.print(im.getPath()+"    ");
-//            System.out.println(im.getSize()/1000+"kb");
-//        }
     }
     public void initListView(){
         sml=(SwipeMenuListView) findViewById(R.id.lv);
@@ -566,19 +579,19 @@ public class MainActivity extends FragmentActivity
         System.out.println(spring.getStartValue());
     }
     private void initViews(){
-        home=(ImageView) findViewById(R.id.return_to_home);
-        settingMenu=(ImageView) findViewById(R.id.setting);
-        searchEdit=(EditText)findViewById(R.id.search_edit);
+        home=findViewById(R.id.return_to_home);
+        settingMenu=findViewById(R.id.setting);
+        searchEdit=findViewById(R.id.search_edit);
         setPx=findViewById(R.id.set_px);
-        CancelDownload=(Button) findViewById(R.id.cancel_download);
-        progessLinearLayout=(LinearLayout) findViewById(R.id.progress_bar_layout);
+        CancelDownload=findViewById(R.id.cancel_download);
+        progessLinearLayout=findViewById(R.id.progress_bar_layout);
         progessLinearLayout.setVisibility(View.INVISIBLE);
-        crab=(ImageView) findViewById(R.id.crab);
-        numberProgressBar=(NumberProgressBar) findViewById(R.id.number_progress_bar);
+        crab=findViewById(R.id.crab);
+        numberProgressBar=findViewById(R.id.number_progress_bar);
         numberProgressBar.setProgressTextColor(getResources().getColor(R.color.white));
         numberProgressBar.setUnreachedBarColor(getResources().getColor(R.color.white));
         numberProgressBar.setReachedBarColor(getResources().getColor(R.color.blue));
-        emptyHint=(LinearLayout) findViewById(R.id.empty_hint);
+        emptyHint=findViewById(R.id.empty_hint);
 
         mAppBarLayout=findViewById(R.id.app_bar);
         mAppBarLayout.setExpanded(false);
@@ -656,29 +669,27 @@ public class MainActivity extends FragmentActivity
             }
             case R.id.set_px:{
                 //设置爬取得像素组
-
             }
             case R.id.search:{
-                if (searchEdit.getText().toString().equals("")) {
+                //搜索
+                content=searchEdit.getText().toString();
+                if (content.equals("")) {
                     Toast.makeText(this,"请输入点东西",Toast.LENGTH_SHORT).show();
                     return;
                 }
-                else {
-                    InputUtils.closeInputWriter(MainActivity.this);
-                    if(session.getDownloadFinish()) {
-                        imageList.clear();
-                        pathList.clear();
-                        if(!content.equals(""))
-                            deleteAllFiles();
-                    }
-                    else {
-                        Toast.makeText(this,"上一个下载还未完成！",Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+                if (null!=mDownloadTask&&!mDownloadTask.isDownloadFinished()){
+                    Toast.makeText(this,"上一个下载还未完成！",Toast.LENGTH_SHORT).show();
+                    return;
                 }
-                content=searchEdit.getText().toString();
+                mDownloadTask=new DownloadTask(content,mCacheDir,this,this);
+                InputUtils.closeInputWriter(MainActivity.this);
+                imageList.clear();
+                pathList.clear();
+                if(!content.equals(""))
+                    deleteAllFiles();
                 Toast.makeText(this,"开始搜索！",Toast.LENGTH_SHORT).show();
-                session.start(content,mCacheDir,this,MainActivity.this);
+                //执行
+                mDownloadTask.execute();
                 break;
             }
             case R.id.cancel_download:{
@@ -712,6 +723,7 @@ public class MainActivity extends FragmentActivity
         intent.addCategory(Intent.CATEGORY_HOME);
         startActivity(intent);
     }
+    //保存全部
     public void doSaveAll(){
         if(imageList.size()!=0) {
             MolaQuickBuild mqb = new MolaQuickBuild(this, "ImageCrab警报", "真的要全部保存吗", "保存", "不保存", "save_all");
@@ -723,7 +735,7 @@ public class MainActivity extends FragmentActivity
         }
     }
     public void dodelete(){
-        //真香警告
+        //警告
         //开始删除
         if(imageList.size()!=0) {
             MolaQuickBuild mqb = new MolaQuickBuild(this, "ImageCrab警报", "真的要全部删除吗", "删除", "不删除", "delete_all");
@@ -738,6 +750,7 @@ public class MainActivity extends FragmentActivity
     protected void onDestroy() {
         super.onDestroy();
     }
+    //通知删除
     public void initBroadcast(){
         if (!isFragmentBroadcastReg)
         {
